@@ -159,8 +159,14 @@ const sensemap = Dict(:(<=) => '<', :(==) => '=', :(>=) => '>')
 
 ## Lazy constraints
 export addLazyConstraint, @addLazyConstraint
+export @lazyconstraint
 
 macro addLazyConstraint(cbdata, x)
+    Base.warn_once("@addLazyConstraint is deprecated. Use @lazyconstraint instead")
+    return Expr(:macrocall, symbol("@lazyconstraint"), esc(cbdata), esc(x))
+end
+
+macro lazyconstraint(cbdata, x)
     cbdata = esc(cbdata)
     if VERSION < v"0.5.0-dev+3231"
         x = comparison_to_call(x)
@@ -177,7 +183,7 @@ macro addLazyConstraint(cbdata, x)
             addLazyConstraint($cbdata, constr)
         end
     else
-        error("Syntax error in addLazyConstraint, expected one-sided comparison.")
+        error("Syntax error in @lazyconstraint, expected one-sided comparison.")
     end
 end
 
@@ -196,8 +202,14 @@ addLazyConstraint(cbdata::MathProgBase.MathProgCallbackData,constr::QuadConstrai
 
 ## User cuts
 export addUserCut, @addUserCut
+export @usercut
 
 macro addUserCut(cbdata, x)
+    Base.warn_once("@addUserCut is deprecated. Use @usercut instead")
+    return Expr(:macrocall, symbol("@usercut"), esc(cbdata), esc(x))
+end
+
+macro usercut(cbdata, x)
     cbdata = esc(cbdata)
     if VERSION < v"0.5.0-dev+3231"
         x = comparison_to_call(x)
@@ -214,7 +226,7 @@ macro addUserCut(cbdata, x)
             addUserCut($cbdata, constr)
         end
     else
-        error("Syntax error in addUserCut, expected one-sided comparison.")
+        error("Syntax error in @usercut, expected one-sided comparison.")
     end
 end
 
