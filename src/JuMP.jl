@@ -54,7 +54,8 @@ export
     @SOCConstraint, @SOCConstraints,
     @defVar, @defConstrRef, @setObjective, addToExpression, @defExpr, @defVars,
     @setNLObjective, @addNLConstraint, @addNLConstraints,
-    @defNLExpr, @defNLParam
+    @defNLExpr, @defNLParam,
+    @constraint, @constraints, @variable, @variables, @objective
 
 include("JuMPContainer.jl")
 include("utils.jl")
