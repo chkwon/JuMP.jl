@@ -283,9 +283,9 @@ macro constraint(args...)
     if length(args) < 2
         error("in @constraint($(join(args,','))): not enough arguments")
     end
-    if isa(args[2], Symbol)
-        mode = args[2]
-        if mode == :NLP
+    if isexpr(args[2], :quote)
+        mode = args[2].args[1]
+        if mode == :nonlinear
             return addNLConstraint_macro(args[1], args[3:end]...)
         elseif mode == :SDP
             return addSDPConstraint_macro(args[1], args[3:end]...)
@@ -303,7 +303,7 @@ macro addConstraint(args...)
 end
 
 macro addNLConstraint(args...)
-    Base.warn_once("@addNLConstraint is deprecated. Use @constraint(model, NLP, expression) instead")
+    Base.warn_once("@addNLConstraint is deprecated. Use @constraint(model, :nonlinear, expression) instead")
     return addNLConstraint_macro(args...)
 end
 
@@ -605,13 +605,13 @@ for (mac,sym) in [(:LinearConstraints, symbol("@LinearConstraint")),
 end
 
 macro addConstraints(m, x)
-    Base.warn_once("@addConstraints is deprecated. Use @constraints instead.")
+    Base.warn_once("@addConstraints is deprecated. Use @constraints instead")
     return Expr(:macrocall,symbol("@constraints"),esc(m),esc(x))
 end
 
 macro addNLConstraints(m, x)
-    Base.warn_once("@addNLConstraints is deprecated. Use @constraints(m,NLP,begin ... end) instead.")
-    return Expr(:macrocall,symbol("@constraints"),esc(m),esc(:NLP),esc(x))
+    Base.warn_once("@addNLConstraints is deprecated. Use @constraints(m, :nonlinear,begin ... end) instead")
+    return Expr(:macrocall,symbol("@constraints"),esc(m),quot(:nonlinear),esc(x))
 end
 
 for (mac,sym) in [(:variables,  symbol("@variable")),
@@ -677,7 +677,7 @@ macro objective(args...)
     if length(args) < 2
         error("in @objective($(join(args,','))): not enough arguments")
     end
-    if args[2] === :NLP
+    if isexpr(args[2],:quote) && args[2].args[1] === :nonlinear
         return setNLObjective_macro(args[1], args[3:end]...)
     else
         return setObjective_macro(args...)
@@ -685,12 +685,12 @@ macro objective(args...)
 end
 
 macro setObjective(args...)
-    Base.warn_once("@setObjective is deprecated. Use @objective instead.")
+    Base.warn_once("@setObjective is deprecated. Use @objective instead")
     return setObjective_macro(args...)
 end
 
 macro setNLObjective(args...)
-    Base.warn_once("@setNLObjective is deprecated. Use @objective(m,NLP,sense,expression) instead.")
+    Base.warn_once("@setNLObjective is deprecated. Use @objective(m,:nonlinear,sense,expression) instead")
     return setNLObjective_macro(args...)
 end
 
@@ -1068,7 +1068,7 @@ function addNLConstraint_macro(m, x, extra...)
     # Two formats:
     # - @addNLConstraint(m, a*x <= 5)
     # - @addNLConstraint(m, myref[a=1:5], sin(x^a) <= 5)
-    length(extra) > 1 && error("in @constraint (NLP): too many arguments.")
+    length(extra) > 1 && error("in @constraint (nonlinear): too many arguments.")
     # Canonicalize the arguments
     c = length(extra) == 1 ? x        : nothing
     x = length(extra) == 1 ? extra[1] : x
@@ -1094,7 +1094,7 @@ function addNLConstraint_macro(m, x, extra...)
             lb = 0.0
             ub = Inf
         else
-            error("in @constraint (NLP) ($(string(x))): expected comparison operator (<=, >=, or ==).")
+            error("in @constraint (nonlinear) ($(string(x))): expected comparison operator (<=, >=, or ==).")
         end
         lhs = :($(x.args[2]) - $(x.args[3]))
         code = quote
@@ -1105,15 +1105,15 @@ function addNLConstraint_macro(m, x, extra...)
     elseif isexpr(x, :comparison)
         # ranged row
         if (x.args[2] != :<= && x.args[2] != :≤) || (x.args[4] != :<= && x.args[4] != :≤)
-            error("in @constraint (NLP) ($(string(x))): only ranged rows of the form lb <= expr <= ub are supported.")
+            error("in @constraint (nonlinear) ($(string(x))): only ranged rows of the form lb <= expr <= ub are supported.")
         end
         lb = x.args[1]
         ub = x.args[5]
         code = quote
             if !isa($(esc(lb)),Number)
-                error(string("in @constraint (NLP) (",$(string(x)),"): expected ",$(string(lb))," to be a number."))
+                error(string("in @constraint (nonlinear) (",$(string(x)),"): expected ",$(string(lb))," to be a number."))
             elseif !isa($(esc(ub)),Number)
-                error(string("in @constraint (NLP) (",$(string(x)),"): expected ",$(string(ub))," to be a number."))
+                error(string("in @constraint (nonlinear) (",$(string(x)),"): expected ",$(string(ub))," to be a number."))
             end
             c = NonlinearConstraint(@processNLExpr($m, $(esc(x.args[3]))), $(esc(lb)), $(esc(ub)))
             push!($m.nlpdata.nlconstr, c)
@@ -1121,7 +1121,7 @@ function addNLConstraint_macro(m, x, extra...)
         end
     else
         # Unknown
-        error("in @constraint (NLP) ($(string(x))): constraints must be in one of the following forms:\n" *
+        error("in @constraint (nonlinear) ($(string(x))): constraints must be in one of the following forms:\n" *
               "       expr1 <= expr2\n" * "       expr1 >= expr2\n" *
               "       expr1 == expr2\n")
     end

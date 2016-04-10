@@ -37,9 +37,9 @@ m = Model()
     L[i] <= x[i=1:9] <= U[i], (start = 0.0)
 end
 
-@objective(m, NLP, Min, 3 * x[1] + 1e-6 * x[1]^3 + 2 * x[2] + .522074e-6 * x[2]^3)
+@objective(m, :nonlinear, Min, 3 * x[1] + 1e-6 * x[1]^3 + 2 * x[2] + .522074e-6 * x[2]^3)
 
-@constraints m NLP begin
+@constraints(m, :nonlinear, begin
     x[4] - x[3] + 0.55 >= 0
     x[3] - x[4] + 0.55 >= 0
     2250000 - x[1]^2 - x[8]^2 >= 0
@@ -63,7 +63,7 @@ end
 
     x[5] * x[7] * cos(x[4] - .25) + x[6] * x[7] * cos(x[4] - x[3] - .25) -
         2 * c * x[7]^2 + 22.938 * a + .7533e-3 * a * x[7] ^2 == 0
-end
+end)
 
 
 solve(m)
