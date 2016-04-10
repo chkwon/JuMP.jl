@@ -308,7 +308,7 @@ macro addNLConstraint(args...)
 end
 
 macro addSDPConstraint(args...)
-    Base.warn_once("@addSDPConstraint is deprecated. Use @constraint(model, SDP, expression) instead")
+    Base.warn_once("@addSDPConstraint is deprecated. Use @constraint(model, :SDP, expression) instead")
     return addSDPConstraint_macro(args...)
 end
 
