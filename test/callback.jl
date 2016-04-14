@@ -212,10 +212,10 @@ facts("[callback] Callback exit on CallbackAbort") do
 for solver in lazy_solvers
 context("With solver $(typeof(solver))") do
     mod = Model(solver=solver)
-    @defVar(mod, 0 <= x <= 2, Int)
-    @defVar(mod, 0 <= y <= 2, Int)
-    @setObjective(mod, Max, x + 2y)
-    @addConstraint(mod, y + x <= 3.5)
+    @variable(mod, 0 <= x <= 2, Int)
+    @variable(mod, 0 <= y <= 2, Int)
+    @objective(mod, Max, x + 2y)
+    @constraint(mod, y + x <= 3.5)
 
     mycallback = _ -> throw(CallbackAbort())
     addLazyCallback(mod, mycallback)

@@ -22,10 +22,12 @@ const sub2 = JuMP.repl[:sub2]
 
 facts("[operator] Testing basic operator overloads") do
     m = Model()
-    @defVar(m, w)
-    @defVar(m, x)
-    @defVar(m, y)
-    @defVar(m, z)
+    @variables(m, begin
+        w
+        x
+        y
+        z
+    end)
     aff = 7.1 * x + 2.5
     @fact affToStr(aff) --> "7.1 x + 2.5"
     aff2 = 1.2 * y + 1.2
@@ -405,7 +407,7 @@ context("sum") do
     # sum(j::JuMPArray{Variable})
     @fact affToStr(sum(matrix)) --> "matrix[1,1] + matrix[2,1] + matrix[3,1] + matrix[1,2] + matrix[2,2] + matrix[3,2] + matrix[1,3] + matrix[2,3] + matrix[3,3]"
     # sum(j::JuMPArray{Variable}) in a macro
-    @setObjective(sum_m, Max, sum(matrix))
+    @objective(sum_m, Max, sum(matrix))
     @fact quadToStr(sum_m.obj) --> "matrix[1,1] + matrix[2,1] + matrix[3,1] + matrix[1,2] + matrix[2,2] + matrix[3,2] + matrix[1,3] + matrix[2,3] + matrix[3,3]"
 
     # sum{T<:Real}(j::JuMPArray{T})
@@ -442,7 +444,7 @@ context("dot") do
     @fact affToStr(vecdot(B,z)) --> "z[1,1,1] + z[2,1,1] + z[1,2,1] + z[2,2,1] + z[1,1,2] + z[2,1,2] + z[1,2,2] + z[2,2,2]"
     @fact affToStr(vecdot(z,B)) --> "z[1,1,1] + z[2,1,1] + z[1,2,1] + z[2,2,1] + z[1,1,2] + z[2,1,2] + z[1,2,2] + z[2,2,2]"
 
-    @setObjective(dot_m, Max, dot(x, ones(3)) - vecdot(y, ones(2,2)) )
+    @objective(dot_m, Max, dot(x, ones(3)) - vecdot(y, ones(2,2)) )
     #solve(dot_m)
     for i in 1:3
         setValue(x[i], 1)
@@ -648,17 +650,17 @@ context("Vectorized comparisons") do
          0 4 5
          6 0 7]
     B = sparse(A)
-    @addConstraint(m, x'*A*x .>= 1)
+    @constraint(m, x'*A*x .>= 1)
     @fact TestHelper.vec_eq(m.quadconstr[1].terms, [x[1]*x[1] + 2x[1]*x[2] + 4x[2]*x[2] + 9x[1]*x[3] + 5x[2]*x[3] + 7x[3]*x[3] - 1]) --> true
     @fact m.quadconstr[1].sense --> :(>=)
-    @addConstraint(m, x'*A*x .>= 1)
+    @constraint(m, x'*A*x .>= 1)
     @fact TestHelper.vec_eq(m.quadconstr[1].terms, m.quadconstr[2].terms) --> true
 
     mat = [ 3x[1] + 12x[3] +  4x[2]
             2x[1] + 12x[2] + 10x[3]
            15x[1] +  5x[2] + 21x[3]]
 
-    @addConstraint(m, (x'A)' + 2A*x .<= 1)
+    @constraint(m, (x'A)' + 2A*x .<= 1)
     terms = map(v->v.terms, m.linconstr[1:3])
     lbs   = map(v->v.lb,    m.linconstr[1:3])
     ubs   = map(v->v.ub,    m.linconstr[1:3])
@@ -673,7 +675,7 @@ context("Vectorized comparisons") do
     @fact TestHelper.vec_eq((x'A)' + 2A*x, @JuMP.Expression((x'A)' + 2B*x)) --> true
     @fact TestHelper.vec_eq((x'A)' + 2A*x, @JuMP.Expression((x'B)' + 2B*x)) --> true
 
-    @addConstraint(m, -1 .<= (x'A)' + 2A*x .<= 1)
+    @constraint(m, -1 .<= (x'A)' + 2A*x .<= 1)
     terms = map(v->v.terms, m.linconstr[4:6])
     lbs   = map(v->v.lb,    m.linconstr[4:6])
     ubs   = map(v->v.ub,    m.linconstr[4:6])
@@ -681,7 +683,7 @@ context("Vectorized comparisons") do
     @fact lbs --> fill(-1, 3)
     @fact ubs --> fill( 1, 3)
 
-    @addConstraint(m, -[1:3;] .<= (x'A)' + 2A*x .<= 1)
+    @constraint(m, -[1:3;] .<= (x'A)' + 2A*x .<= 1)
     terms = map(v->v.terms, m.linconstr[7:9])
     lbs   = map(v->v.lb,    m.linconstr[7:9])
     ubs   = map(v->v.ub,    m.linconstr[7:9])
@@ -689,7 +691,7 @@ context("Vectorized comparisons") do
     @fact lbs --> -[1:3;]
     @fact ubs --> fill( 1, 3)
 
-    @addConstraint(m, -[1:3;] .<= (x'A)' + 2A*x .<= [3:-1:1;])
+    @constraint(m, -[1:3;] .<= (x'A)' + 2A*x .<= [3:-1:1;])
     terms = map(v->v.terms, m.linconstr[10:12])
     lbs   = map(v->v.lb,    m.linconstr[10:12])
     ubs   = map(v->v.ub,    m.linconstr[10:12])
@@ -697,7 +699,7 @@ context("Vectorized comparisons") do
     @fact lbs --> -[1:3;]
     @fact ubs --> [3:-1:1;]
 
-    @addConstraint(m, -[1:3;] .<= (x'A)' + 2A*x .<= 3)
+    @constraint(m, -[1:3;] .<= (x'A)' + 2A*x .<= 3)
     terms = map(v->v.terms, m.linconstr[13:15])
     lbs   = map(v->v.lb,    m.linconstr[13:15])
     ubs   = map(v->v.ub,    m.linconstr[13:15])
@@ -710,10 +712,10 @@ end
 
 facts("[operator] JuMPArray concatenation") do
     m = Model()
-    @defVar(m, x[1:3])
-    @defVar(m, y[1:3,1:3])
-    @defVar(m, z[1:1])
-    @defVar(m, w[1:1,1:3])
+    @variable(m, x[1:3])
+    @variable(m, y[1:3,1:3])
+    @variable(m, z[1:1])
+    @variable(m, w[1:1,1:3])
 
     @fact TestHelper.vec_eq([x y], [x[1] y[1,1] y[1,2] y[1,3]
                                     x[2] y[2,1] y[2,2] y[2,3]
