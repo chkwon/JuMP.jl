@@ -298,6 +298,9 @@ macro addConstraint(args...)
     end
     m = args[1]
     x = args[2]
+    if isa(x, Symbol)
+        error("in @addConstraint($(join(args,','))): Incomplete constraint specification $x. Are you missing a comparison (<=, >=, or ==)?")
+    end
     extra = args[3:end]
 
     m = esc(m)
@@ -403,6 +406,10 @@ end
 
 macro addSDPConstraint(m, x)
     m = esc(m)
+
+    if isa(x, Symbol)
+        error("in @addSDPConstraint: Incomplete constraint specification $x. Are you missing a comparison (<= or >=)?")
+    end
 
     (x.head == :block) &&
         error("Code block passed as constraint.")
